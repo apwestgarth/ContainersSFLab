@@ -1,6 +1,6 @@
 # ContainersSFLab
 
-This repository contains all tha needed files and instructions to go through an ASP.NET lift and shift with Windows containers and Service Fabric lab.
+This repository contains all the needed files and instructions to go through an ASP.NET lift and shift with Windows containers and Service Fabric lab.
 
 Requirements for running the lab are
 
