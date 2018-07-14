@@ -1,4 +1,4 @@
-# ContainersSFLab
+# ContainersSFLab Repo
 
 This repository contains all the needed files and instructions to go through an ASP.NET lift and shift with Windows containers and Service Fabric lab.
 
@@ -12,24 +12,24 @@ Requirements for running the lab are
     - If you do not have one, you can get a trial subscription here: https://azure.microsoft.com/en-us/free/
 
 # Containerize an existing ASP.NET application using Visual Studio and Service Fabric
+In order to lift and shift an application to the cloud without re-writing code, we're going to containerize the application and deploy it to a Service Fabric cluster.
 
 # Lab Overview
 
 In this lab, you will be guided through the following tasks:
 
-1.  Build a Docker container for Windows, with an existing ASP.NET web
+1.  Build a Windows Docker container, with an existing ASP.NET web
     application
 
-1.  Create an Azure Container Registry, and push your container to a
-    registry
+1.  Create a Service Fabric application with your container
 
-1.  Create an Azure Service Fabric application with your container
+1.  Deploy your application to a Service Fabric cluster
 
-1.  Deploy your application to Azure Service Fabric
+*This lab's instructions can also be accessed at https://aka.ms/sfcontainerlab along with necessary resources.*
   
-# Build a Docker container for Windows, with an existing ASP.NET web application
+# Build a Docker container for Windows with an existing ASP.NET web application
 
-**Goal:** The goal of this section is to have an ASP.NET application running in a Docker container on your Windows 10 developer machine.
+**Goal:** The goal of this section is to have an ASP.NET application running in a container on your Windows 10 developer machine.
 
 ## Process
 
@@ -41,9 +41,7 @@ In this lab, you will be guided through the following tasks:
 
 ## Run the Application
 
-In this section we will test the ASP.NET application using Visual Studio
-and IIS
-Express.
+In this section we will test the ASP.NET application using Visual Studio and IIS Express.
 
 | **Step** | **Action** | **Result** |
 | -------- | ---------- | ---------- |
