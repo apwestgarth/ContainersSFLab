@@ -27,8 +27,6 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <TargetFrameworkProfile />
-    <StartWebServerOnDebug>False</StartWebServerOnDebug>
-    <IsServiceFabricServiceProject>True</IsServiceFabricServiceProject>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -146,9 +144,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include=".dockerignore">
-      <DependentUpon>Dockerfile</DependentUpon>
-    </Content>
     <Content Include="About.aspx" />
     <Content Include="Catalog\Create.aspx" />
     <Content Include="Catalog\Delete.aspx" />
@@ -176,7 +171,6 @@
     <Content Include="fonts\Montserrat-Regular.ttf" />
     <Content Include="fonts\Montserrat-Regular.woff" />
     <Content Include="fonts\Montserrat-Regular.woff2" />
-    <Content Include="Dockerfile" />
     <None Include="Scripts\jquery-1.10.2.intellisense.js" />
     <Content Include="images\brand.png" />
     <Content Include="images\brand_dark.png" />
@@ -191,8 +185,6 @@
     <Content Include="Models\Infrastructure\dbo.catalog_type_hilo.Sequence.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="PackageRoot\Config\Settings.xml" />
-    <Content Include="PackageRoot\ServiceManifest.xml" />
     <Content Include="Pics\1.png" />
     <Content Include="Pics\10.png" />
     <Content Include="Pics\11.png" />

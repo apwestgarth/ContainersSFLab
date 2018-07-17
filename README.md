@@ -54,7 +54,8 @@ In this section we will test the ASP.NET application using Visual Studio and IIS
 
 ### Completion
 
-You’ve now complete debugging an ASP.NET application using Visual Studio and IIS Express.
+You’ve now complete debugging an ASP.NET application using Visual Studio
+and IIS Express.
 
 ## Create a Docker container
 
@@ -74,7 +75,8 @@ Information Server (IIS) to be running in the container.
 
 ### Completion
 
-You’ve now published the ASP.NET application eShopLegacyWebForms and built a docker container image with the application.
+You’ve now published the ASP.NET application eShopLegacyWebForms and
+built a docker container image with the application.
 
 ## Run the application in a container
 
@@ -400,6 +402,7 @@ roll-out an upgrade to the Service Fabric application.
 In this section of the lab, we’ve parameterized our configuration,
 applied resource governance and upgraded our application in the Service
 Fabric cluster.
+
 
 
 # Create an Azure Container Registry, and push your container to a registry
