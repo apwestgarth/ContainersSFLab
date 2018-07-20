@@ -18,35 +18,48 @@ In order to lift and shift an application to the cloud without re-writing code, 
 
 In this lab, you will be guided through the following tasks:
 
-1.  Build a Windows Docker container, with an existing ASP.NET web
-    application
+1. Create a Service Fabric application by containerizing an existing ASP.NET web
+    application though Visual Studio
 
-1.  Create a Service Fabric application with your container
+1. Deploy your application to a Service Fabric cluster
 
-1.  Deploy your application to a Service Fabric cluster
+1. Upgrade and optimize the way your application runs in the cluster
 
 *This lab's instructions can also be accessed at https://aka.ms/sfcontainerlab along with necessary resources.*
   
-# Create an Azure Service Fabric application with your container
+# Create a Service Fabric application with your container
 
-**Goal:** The goal of this section is to have the container running as a
-service in a Service Fabric
-application.
+**Goal:** The goal of this section is to have the container running as a service in a Service Fabric application.
+
 
 ## Process
 
+
 | **Step**                                         | **Procedure**                                                                                                                                |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Create a Service Fabric Application              | We will use Visual Studio to create a Service Fabric application hosting the container.                                                      |
+| Run the application                              | Run the existing ASP.NET application to verify its functionality, using Visual Studio and IIS Express.                                       |
+| Create a Service Fabric Application              | Use Visual Studio tooling to create a Service Fabric application hosting the container.                                                      |
 | Run the container as a service in Service Fabric | We will set up a local development cluster and deploy the containerized application to the local cluster.                                    |
 | Apply container policies and upgrade             | We will apply container resource policies and parameters for configuration. Finally, we will upgrade the running application in the cluster. |
 
-##   
+## Run the Application
+
+In this section we will test the ASP.NET application using Visual Studio and IIS Express.
+
+| **Step** | **Action** | **Result** |
+| -------- | ---------- | ---------- |
+| 1 | Open the solution **eShopLegacyWebForms.sln**, which you will find in the **\\Lab\\eShopLegacyWebFormsSolution** folder on the desktop. | Visual Studio will open, and you will see one project with an ASP.NET MVC application in Visual Studio.|
+| 2 | Change the **Solution Configuration** to **Debug** (dropdown in the menu at the top) and press **F5** (Or the green *IIS Express* button) to start debugging the application. | The application will now build, and Edge will open with the application when it’s ready. | 
+| 3 | The application simulates a simple web shop administrative interface. Feel free to browse around the application to see details of the various products and some of the functionality. | **Note:** The application is setup to use mock data loaded from source files, so all changes will be reverted once the debug session closes. |
+| 4 | Back in VS, press **Shift+F5** or the red stop button at the top of your VS window to stop the debugging | Debugging stops. |
+
+### Completion
+
+You’ve now completed testing an ASP.NET application using Visual Studio and IIS Express.
 
 ## Create a Service Fabric Application
 
-In this section we will create a Service Fabric application with the
-container as a service, and configure it.
+In this section we will create a Service Fabric application with the container as a service, and configure it.
 
 <table>
 <thead>
@@ -59,85 +72,74 @@ container as a service, and configure it.
 <tbody>
 <tr class="odd">
 <td>1</td>
-<td>Open the solution <strong>eShopLegacyWebForms.sln</strong>, which you will find in the <strong>\Lab\eShopLegacyWebFormsSolution</strong> folder on the desktop.</td>
-<td>The application code will open in Visual Studio 2017.</td>
+<td>In the Solution Explorer on the right of the VS window, <strong>Right-Click</strong> the project file (eShopLegacyWebForms) and choose <strong>Add -&gt; Container Orchestrator Support</strong>. Choose <strong>Service Fabric</strong> in the dropdown menu.</td>
+<td>Visual Studio 2017 will now create the required Dockerfile for your container image, as well as a Service Fabric application project in the solution in Visual Studio. Check this by confirming that there is a *eShopLegacyWebFormsApplication* Service Fabric application in your Solution Explorer.</td>
 </tr>
 <tr class="even">
 <td>2</td>
-<td><strong>Right-Click</strong> the project file and choose <strong>Add -&gt; Container Orchestrator Support</strong>. Choose <strong>Service Fabric</strong> in the dropdown menu.</td>
-<td>Visual Studio 2017 will now create the required Dockerfile for your container image, as well as a Service Fabric application project in the solution in Visual Studio.</td>
+<td>Find and open the <strong>Dockerfile</strong> in your project files. You'll see that it is using a windowservercore image for the underlying OS in the container by default - one that is compatible with being deployed on your developer machine.</td>
+<td>VS creates a Dockerfile which you can modify as your requirements change, to change the container image being generated when you build your code</td>
 </tr>
 <tr class="odd">
 <td>3</td>
-<td><p>To instruct Service Fabric to open port 80 for the service (our container), like we did in the previous docker commands, we must specify the port to use in the ServiceManifest.xml file.</p>
+<td><p>To instruct Service Fabric to open a specific port (4000) for the service (our container), we must specify the port to use in the ServiceManifest.xml file.</p>
 <ol type="1">
-<li><p>The ServiceManifest.xml file should already be open</p></li>
-<li><p>Specify the port to use for the endpoint in the &lt;Endpoint&gt; element:</p></li>
-</ol>
-<blockquote>
-<p>&lt;Endpoint Protocol=&quot;http&quot; Name=&quot;eShopLegacyWebFormsTypeEndpoint&quot; Type=&quot;Input&quot; Port=&quot;80&quot;/&gt;</p>
-</blockquote>
-<ol start="3" type="1">
+<li><p>Open <strong>ServiceManifest.xml</strong>, which is in the PackageRoot folder of the eShopLegacyWebForms project</p></li>
+<li><p>Specify the port to use for the endpoint in the &lt;Endpoint&gt; element (near the bottom) as 4000. Here is what that should look like: </p></li>
+
+```csharp
+Endpoint Protocol="http" Name="eShopLegacyWebFormsTypeEndpoint" Type="Input" Port="4000";
+```
+
 <li><p>Save the file</p></li>
 </ol>
-<p><strong>Note:</strong></p>
-<p>If no endpoint is specified, Service Fabric will assign a random endpoint from a predefined pool of ports.</p></td>
-<td>The endpoint is bound to the service, which will host the container in Service Fabric. This configuration will ensure that Service Fabric attaches a port to the service process when it’s running.</td>
+</td>
+<td>The endpoint is bound to the service, which will host the container in Service Fabric. This configuration will ensure that Service Fabric attaches a port to the service process when it’s running. <br><strong>Note:</strong> If no endpoint is specified, Service Fabric will assign a random endpoint from a predefined pool of ports.</td>
 </tr>
 <tr class="even">
 <td>4</td>
 <td><p>To instruct Service Fabric to map port 80 of the container to the endpoint we specified above, we must create a PortBinding configuration in the ApplicationManifest.xml file.</p>
 <ol type="1">
 <li><p>In the ApplicationPackageRoot folder under the Application project (eShopLegacyWebFormsApplication1), open the ApplicationManifest.xml file</p></li>
-<li><p>Verify the following configuration, as part of the &lt; ContainerHostPolicies &gt; element:</p></li>
-</ol>
-<blockquote>
-<p>&lt;PortBinding ContainerPort=&quot;80&quot; EndpointRef=&quot;eShopLegacyWebFormsTypeEndpoint&quot; /&gt;</p>
-</blockquote>
-<ol start="3" type="1">
-<li><p>Save the file</p></li>
+<li><p>Verify the following configuration, as part of the &lt;ContainerHostPolicies&gt; element:</p></li>
+
+```csharp
+PortBinding ContainerPort"80" EndpointRef="eShopLegacyWebFormsTypeEndpoint"
+```
+
+<li><p>If not - add it to your manifest (under ServiceManifestImport > Policies > ContainerHostPolicies) and save the file</p></li>
 </ol></td>
-<td>This configuration ensures that the port exposed by the container, will be mapped to the endpoint of the service. The end result is similar to the <strong>-p 80:80</strong> command we used when running the container previous.</td>
+<td>This configuration ensures that the port exposed by the container will be mapped to the endpoint of the service.
 </tr>
 <tr class="odd">
 <td>5</td>
 <td><p>Finally, we’ll specify an environment variable to pass to the container.</p>
 <ol type="1">
-<li><p>In the ServiceManifest.xml file, add the following element in the CodePackage element to pass an environment variable to the container:</p></li>
-</ol>
+<li><p>In the ServiceManifest.xml file, add the following element in the CodePackage element to pass an environment variable to the container that defines the name of the shop (you can modify the "Value" if you'd like):</p></li>
+
 
 ```csharp
-    <EnvironmentVariables>
-      <EnvironmentVariable Name="eShopTitle" Value="on SF!"/>
-    </EnvironmentVariables>
+<EnvironmentVariables>
+    <EnvironmentVariable Name="eShopTitle" Value="on SF!"/>
+</EnvironmentVariables>
 ```
 
-<blockquote>
-<p>&lt;EnvironmentVariables&gt;</p>
-<p>&lt;EnvironmentVariable Name=&quot;eShopTitle&quot; Value=&quot;on SF!&quot;/&gt;</p>
-<p>&lt;/EnvironmentVariables&gt;</p>
-</blockquote>
-<ol start="2" type="1">
 <li><p>Save the file</p></li>
 </ol>
-<p><strong>Note:</strong></p>
-<p>If the environment variable value you put in is too long a string, it will cause the web site to not show any title – so be kind</p></td>
-<td>This environment variable configuration will be used for the front page of the web application.</td>
+<p><strong>Note:</strong> If the environment variable value you put in is too long a string, it will cause the web site to not show any title – so be kind.</p></td>
+<td>This environment variable configuration will be used for the title displayed on the front page of the web application.</td>
 </tr>
 </tbody>
 </table>
 
 ### Completion
 
-In this section of the lab, we’ve created a Service Fabric application
-and configured the container to run in a Service Fabric cluster.
+In this section of the lab, we’ve created a Service Fabric application that consists of a containerized ASP.NET + IIS application, and configured it to run in a Service Fabric cluster.
 
-##   
+## Run the container in Service Fabric
 
-## Run the container as a service in Service Fabric
-
-In this section we will run the container in Service Fabric on our
-developer machine.
+In this section we will run the container in Service Fabric on our dev machine.
+You can run a Service Fabric cluster on a Windows 10 with the Service Fabric SDK, which provides cluster configuration scripts that support setting up clusters of one node or five nodes for development purposes.
 
 <table>
 <thead>
@@ -150,36 +152,38 @@ developer machine.
 <tbody>
 <tr class="odd">
 <td>1</td>
-<td><p>Service Fabric cluster can run on Windows 10, and the SDK provides cluster configuration scripts which supports setting up clusters of one node for development purposes. Let’s start by creating a one node cluster.</p>
-<p><strong>Right-click</strong> the <strong>Service Fabric Local Cluster Manager</strong> in the task bar and select <strong>Start Local Cluster</strong></p></td>
-<td><p>A Service Fabric cluster will now be created on your developer machine.</p>
-<p>We will be using a one node cluster in this lab, as additional nodes will only add overhead to the developer experience and is usually only needed for debugging failover scenarios.</p></td>
+<td><p> Let’s start by creating a one node cluster. If you hover the little Service Fabric icon in your notification tray (bottom right of your OS UI) - you will see that it says "Service Fabric Local Cluster Manager (1 Node). <strong>Right-click</strong> on it and select <strong>Start Local Cluster</strong> to start the local cluster. <br> Click <strong>Yes</strong> if asked to grant admin permission to the process.</td>
+<td><p>A Service Fabric cluster consistent of a single node will now be created on your developer machine. We use a single node in this lab as additional nodes will only add overhead to the developer experience are usually only needed for debugging failover scenarios.</p></td>
 </tr>
 <tr class="even">
 <td>2</td>
-<td>Open <strong>Service Fabric Explorer</strong> using the desktop link and choose <strong>Connect to localhost</strong></td>
-<td><p>Service Fabric Explorer is your management UI for any Service Fabric cluster, locally, in Azure or on-premises.</p>
-<p>Service Fabric explorer let you get information about your cluster, application and services and do administrative commands against the cluster.</p></td>
+<td>
+<p>After a few minutes, the Local Cluster Manager will push an update that it has successfully connected to the new cluster. <strong>Right-click</strong> on the Local Cluster Manager icon in the tray and click on <strong>Manage Local Cluster</strong>. </p> 
+<p>This will open up Service Fabric Explorer (SFX). Once in SFX, find the slider the top right that defines the refresh rate, and move it all the way to the right (2 sec)<p></td>
+<td><p>SFX is your management UI for any Service Fabric cluster, locally, in Azure, or on-premises.</p>
+<p>Service Fabric explorer let you get information and updates about your cluster, applications, and services, and provides an interface for doing administrative commands against the cluster. Speeding up the rate at which the UI helps you keep a better track of how your cluster is handling your application, which is especially helpful when developing and testing. Feel free to click around the UI to get a feel for what it shows. </p></td>
 </tr>
 <tr class="odd">
 <td>3</td>
-<td><p>Next go back to Visual Studio 2017 to publish the application:</p>
+<td><p>Next go back to VS to publish the application:</p>
 <ol type="1">
 <li><p><strong>Right-click</strong> the Service Fabric application project and select <strong>Publish</strong> to publish the application to the local Service Fabric cluster.</p></li>
-<li><p>Choose <strong>PublishProfiles\Local.1Node.xml</strong> as the Target profile.</p></li>
+<li><p>Choose <strong>PublishProfiles\Local.1Node.xml</strong> as the Target profile</p></li>
 <li><p>Click <strong>Publish</strong></p></li>
+<li><p>If VS prompts you to restart as Administrator, hit <strong>Yes</strong>, or if it wants to inform you that files have changed externally, uncheck the *reload all files* prompt and click <strong>Yes to all</strong></p></li>
 </ol></td>
-<td>Visual Studio will build the container and deploy the application to Service Fabric. The Service Fabric cluster will then pull the container image form the local cache and run it as a Service in Service Fabric.</td>
+<td>Visual Studio will build the container and deploy the application to Service Fabric. Watch the *Output* console in VS to see some of the steps being taken.</td>
 </tr>
 <tr class="even">
 <td>4</td>
-<td>Once the deployment is completed, you can browse to <strong>http://localhost</strong> to see the website running in SF.</td>
-<td>In this scenario we are just publishing the container, however you can also debug the application code in a container running on Service Fabric, simply by pressing F5.</td>
-</tr>
-<tr class="odd">
-<td>5</td>
-<td>Go to <strong>Service Fabric Explorer</strong>, which will now show you one Application deployed in the cluster.</td>
-<td></td>
+<td>Once the deployment is completed, go back to <strong>SFX</strong>, which will now show you one application deployed in the cluster. On the left nav, click all the way down into the application to explore the heirarchy of a SF application. Click on <strong>Node_0</strong> at the very bottom of the tree. This will pull up the running instance of the app on this node (which is your dev machine). <strong>Copy</strong> the URL that you see associated with your endpoint, and open it up in a new tab in your browser.
+
+```
+http://LAB01:4000
+```
+
+</td>
+<td>You should see your eShop UI come up! In this scenario we are just publishing the container, however you can also debug the application code in a container running on Service Fabric, simply by pressing F5 in VS. The difference here is that we can go back to editing code now without shutting off the running instance and can then upgrade the application.</td>
 </tr>
 </tbody>
 </table>
@@ -189,13 +193,12 @@ developer machine.
 In this section of the lab, we’ve created a local Service Fabric cluster
 and deployed our application in a container to the cluster.
 
-##   
-
 ## Apply container policies and upgrade the application
 
 In this section we will enable parameterization of our application
-configuration and apply resource policies to the container. We will also
-roll-out an upgrade to the Service Fabric application.
+configuration and apply resource policies to the container. We will also roll-out an upgrade to the Service Fabric application.
+
+Head back to VS!
 
 <table>
 <thead>
@@ -211,43 +214,50 @@ roll-out an upgrade to the Service Fabric application.
 <td><p>Docker and Service Fabric can control the amount of resources containers can use in a cluster. To specify the amount of memory and CPU for our container do the following:</p>
 <ol type="1">
 <li><p>In the <strong>ApplicationPackageRoot</strong> folder under the Application project, open the <strong>ApplicationManifest.xml</strong> file</p></li>
-<li><p>Insert the following configuration, as part of the <strong>&lt; Policies &gt;</strong> element:</p></li>
-</ol>
-<p>&lt;ServicePackageResourceGovernancePolicy CpuCores=&quot;1&quot; MemoryInMB=&quot;1024&quot; /&gt;</p>
-<ol start="3" type="1">
-<li><p><strong>Save</strong> the file</p></li>
+<li><p>Insert the following configuration, as part of the <strong>&lt;Policies&gt;</strong> element (under ContainerHostPolicies):</p></li>
+
+```csharp
+<ServicePackageResourceGovernancePolicy CpuCores="1" MemoryInMB="1024" />
+```
+
+<li><p>Save the file</p></li>
 </ol></td>
-<td>This will make sure this container gets a single CPU core and 1GB of memory assigned in the cluster. Service Fabric uses this enforcement to place containers in the cluster.</td>
+<td>This will make sure this container gets a single CPU core and 1GB of memory assigned in the cluster. Service Fabric uses this enforcement to place containers across the cluster as your deployment scales up.</td>
 </tr>
 <tr class="even">
 <td>2</td>
 <td><p>We also want to have a single configuration file for changing configuration for our container across environments. In Service Fabric we will use the ApplicationParameter files to do this. To parameterize the environment variable, do the following:</p>
 <ol type="1">
 <li><p>Open the <strong>ApplicationManifest.xml</strong> file</p></li>
-<li><p>Insert the following to override the environment variable in the ServiceManifest.xml file as part of the <strong>&lt;ServiceManifestImport&gt;</strong> element:</p></li>
-</ol>
-<p>&lt;EnvironmentOverrides CodePackageRef=&quot;Code&quot;&gt;</p>
-<p>&lt;EnvironmentVariable Name=&quot;eShopTitle&quot; Value=&quot;[eShopLegacyWebForms_eShopTitle]&quot; /&gt;</p>
-<p>&lt;/EnvironmentOverrides&gt;</p>
-<ol start="3" type="1">
-<li><p>The value specified in square bracket `[]` is a reference to a parameter, which we will also have to add to the file, as part of the <strong>&lt;Parameters&gt;</strong> element. We will set the default value to be an empty string.</p></li>
-</ol>
-<p>&lt;Parameter Name=&quot;eShopLegacyWebForms_eShopTitle&quot; DefaultValue=&quot;&quot; /&gt;</p>
-<ol start="4" type="1">
-<li><p><strong>Save</strong> the file</p></li>
+<li><p>Insert the following to override the environment variable in the ServiceManifest as part of the <strong>&lt;ServiceManifestImport&gt;</strong> element (just under the &lt;/Policies&gt; tag):</p></li>
+
+```csharp
+<EnvironmentOverrides CodePackageRef="Code">
+    <EnvironmentVariable Name="eShopTitle" Value="[eShopLegacyWebForms_eShopTitle]" />
+</EnvironmentOverrides>
+```
+
+<li><p>The value specified in square bracket `[]` is a reference to a parameter, which we will also have to add to the ApplicationManifest, as part of the <strong>&lt;Parameters&gt;</strong> element at the top of the file. We will set the default value to be an empty string.</p></li>
+
+```csharp
+<Parameter Name="eShopLegacyWebForms_eShopTitle" DefaultValue="" />
+```
+<li><p>Save the file</p></li>
 </ol></td>
-<td></td>
+<td>Now you have a parameter set up to modify the title of the website. You can similarly add additional environment variables to provide configurations to help your services run the way you need them to, without constantly modifying your container images.</td>
 </tr>
 <tr class="odd">
 <td>3</td>
-<td><p>Now that we have defined the environment variable to be overridden by a parameter, let’s specify the parameter:</p>
+<td><p>Now that we have defined the environment variable to be overridden by a parameter, let’s specify the value for the parameter:</p>
 <ol type="1">
-<li><p>Open the <strong>ApplicationParameters</strong> folder and the file <strong>Local.1Node.xml</strong>. This is the file which will be used when we publish to our local cluster.</p></li>
+<li><p>In the <strong>ApplicationParameters</strong> folder, open the  <strong>Local.1Node.xml</strong> file. This is the file which will be used when we publish to our local 1 node cluster.</p></li>
 <li><p>Add the following to the <strong>&lt;Parameters&gt;</strong> element:</p></li>
-</ol>
-<p>&lt;Parameter Name=&quot;eShopLegacyWebForms_eShopTitle&quot; Value=&quot;One&quot; /&gt;</p>
-<ol start="3" type="1">
-<li><p><strong>Save</strong> the file</p></li>
+
+```csharp
+<Parameter Name="eShopLegacyWebForms_eShopTitle" Value="MSReady" />
+```
+
+<li><p>Save the file</p></li>
 </ol></td>
 <td>Parameter files is a concept understood by Visual Studio and VSTS. If you will be using PowerShell or other means to deploy, Service Fabric accepts parameters as a hash table.</td>
 </tr>
@@ -258,8 +268,9 @@ roll-out an upgrade to the Service Fabric application.
 <li><p><strong>Right-click</strong> the Service Fabric application project and select <strong>Publish</strong> to publish the application to the local Service Fabric cluster.</p></li>
 <li><p>Choose <strong>PublishProfiles\Local.1Node.xml</strong> as the Target profile.</p></li>
 <li><p>Check <strong>Upgrade the application</strong></p></li>
-<li><p>Click <strong>Manifest Version</strong></p></li>
-<li><p>Change the version of the <strong>ApplicationType</strong> to 2.0 (New Version)</p></li>
+<li><p>Click <strong>Manifest Versions...</strong></p></li>
+<li><p><strong>Expand the tree</strong> under eShopLegacyWebFormsPkg</p></li>
+<li><p>Change the <stron> New Version</strong> of the <strong>Config</strong> to <strong>2.0.0</strong> since we have modified the configuration, but not the code</p></li>
 <li><p>Click <strong>Save</strong></p></li>
 <li><p>Click <strong>Publish</strong></p></li>
 </ol></td>
@@ -267,17 +278,20 @@ roll-out an upgrade to the Service Fabric application.
 </tr>
 <tr class="odd">
 <td>5</td>
-<td><p>Open <strong>Service Fabric Explorer</strong> using the desktop link and choose <strong>Connect to localhost.</strong></p>
+<td><p>Open <strong>SFX</strong> and check out the following:
 <ol type="1">
-<li><p>Click <strong>Applications</strong> and notice the application is now version 2.0.</p></li>
-<li><p>Click <strong>Cluster</strong> and <strong>Metrics</strong> and notice the resource capacity overview in the cluster.</p></li>
+<li><p>Click <strong>Applications</strong> on the left nav and click on <strong>Upgrades in Progress</strong> on the top nav to see your new version coming through</p></li>
+<li><p>When completed, head back to <strong>All applications</strong> and confirm that the application is now in version 2.0.0</p></li>
+<li><p>Click <strong>Cluster</strong> and head to the <strong>Metrics</strong> page. Uncheck the <strong>Normalize metric data</strong> if it is checked, and select <strong>servicefabric:/_CpuCores</strong> in the metric options on the left of the chart. This should show the deployment at 1 core<p></li>
+<li><p>Similarly, check on the memory metric data as well, which should show the deployment at 1024MB, as we specified<p></li>
 </ol></td>
-<td>If the cluster had consisted of multiple nodes, the upgrade would have taken a while as each node gets updated to completion, and the upgrade would only move forward if no errors occurred. If an error occurred, the upgrade would automatically roll-back, leaving the application up and running.</td>
+<td>If the cluster had consisted of multiple nodes, the upgrade would have taken significantly longer - each node gets updated to completion and then SF runs a series of health checks to make sure the app is stable before moving forward. If an error occurred, the upgrade would automatically roll-back, leaving the application up and running. </p>
+<p> Checking out the Metrics on your cluster will also show you that your application is now consuming exactly one core in the node.</p></td>
 </tr>
 <tr class="even">
 <td>6</td>
-<td>Open Edge and browse to <strong>http://localhost</strong> to see the changes.</td>
-<td></td>
+<td>Head back over to <strong>http://LAB01:4000</strong> to see the change reflected in the title.</td>
+<td>With that you can see that your parameter successfully overrode the environment variable we set in the Service Manifest.</td>
 </tr>
 </tbody>
 </table>
@@ -288,61 +302,9 @@ In this section of the lab, we’ve parameterized our configuration,
 applied resource governance and upgraded our application in the Service
 Fabric cluster.
 
+## Bonus steps!
 
-#Bonus stuff - containerize your image without the VS tooling and upload it to ACR
-
-# Build a Docker container for Windows with an existing ASP.NET web application
-
-**Goal:** The goal of this section is to have an ASP.NET application running in a container on your Windows 10 developer machine.
-
-## Process
-
-| **Step**                           | **Procedure**                                                                                          |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Run the application                | Run the existing ASP.NET application to verify its functionality, using Visual Studio and IIS Express. |
-| Create a Docker container          | Create a docker container.                                                                             |
-| Run the application in a container | Run and debug the application running in a container, using Visual Studio.                             |
-
-## Run the Application
-
-In this section we will test the ASP.NET application using Visual Studio and IIS Express.
-
-| **Step** | **Action** | **Result** |
-| -------- | ---------- | ---------- |
-| 1        | Open the solution **eShopLegacyWebForms.sln**, which you will find in the **\\Lab\\eShopLegacyWebFormsSolution** folder on the desktop. <br><br> **Note** <br> Visual Studio will ask for login, choose **Not now** and choose a theme.                                                 | Visual Studio will open, and you will see one project with an ASP.NET MVC application in Visual Studio.                                      |
-| 2        | Expand the **Default.aspx** file in the **Solution Explorer**, then open the **Default.aspx.cs** file in Visual Studio and set a breakpoint at line **25**.                                                                                                | This will break the application once a browser requests the home page.                                                                       |
-| 3        | Change the **Solution Configuration** to **Debug** and press **F5** to start debugging the application.                                                                                                                                       | The application will now build, and Edge will open with the application when it’s ready.                                                     |
-| 4        | When the breakpoint is hit, click **F5** to continue code execution.                                                                                                                   | The applications home page shows up in Edge.                                                                                                 |
-| 5        | The application simulates a simple web shop administrative interface. Feel free to browse around the application to see details of the various products and some of the functionality. | **Note:** The application is setup to use mock data loaded from source files, so all changes will be reverted once the debug session closes. |
-| 6        | Press **Shift+F5** to stop the debugging                                                                                                                                               | Debugging stops.                                                                                                                             |
-
-### Completion
-
-You’ve now complete debugging an ASP.NET application using Visual Studio
-and IIS Express.
-
-## Create a Docker container
-
-In this section we will create a docker container image to run the
-ASP.NET application eShopLegacyWebForms, which requires Internet
-Information Server (IIS) to be running in the container.
-
-| **Step** | **Action** | **Result** |
-| -------- | ---------- | ---------- |
-| 1 | Publish eShopLegacyWebForms application to a folder from Visual Studio by: <br><br> 1.  **Right-Clicking** the **eShopLegacyWebForms** project and choose **Publish** <br> 2.  Choose **Folder** <br> 3.  Click **Publish** | The web application is now published to a folder and ready to be deployed in to a container image. |
-| 2 | Open **PowerShell** and change directory to **“C:\\Users\\Administrator\\Desktop\\<br>Lab\\eShopLegacyWebFormsSolution\\src\\eShopLegacyWebForms”** | |
-| 3|Create a new DockerFile (no file extension) and open it in Notepad, by running the following commands: <br><br> 1. New-Item Dockerfile <br> 2. Notepad Dockerfile <br> 3. A blank Notepad will show up.||
-| 4| Add the following content: <br><br> FROM microsoft/aspnet:4.7.1-windowsservercore-ltsc2016 <br> COPY bin/Release/Publish /inetpub/wwwroot|
-| 5 | **Save and close** the file| The Dockerfile contains instructions for the docker engine on how to build a container, when running the “docker build” command in this directory.|
-| 6 | In PowerShell run the command <br> **“docker build . -t eshopweb:1.0”**<br> in the directory **“C:\\Users\\Administrator\\Desktop\\<br>Lab\\eShopLegacyWebFormsSolution\\src\\eShopLegacyWebForms”** | This command will tell the Docker host to build a container image and tag it eshopweb:1.0, using the instructions in the Dockerfile.
-| 7 | Run the command **docker images** to see the container images cached on your machine | You should see an image with the repository: eshopweb and the tag: 1.0. |
-
-### Completion
-
-You’ve now published the ASP.NET application eShopLegacyWebForms and
-built a docker container image with the application.
-
-## Run the application in a container
+Your eShop is getting quite popular! Let's scale this thing!
 
 <table>
 <thead>
@@ -355,256 +317,75 @@ built a docker container image with the application.
 <tbody>
 <tr class="odd">
 <td>1</td>
-<td><p>Create an instance of the container and run it, by running the following command in PowerShell:</p>
-<p><strong>docker run -p 80:80 -d --name eshoptest eshopweb:1.0</strong></p></td>
-<td>This creates and starts a container, exposing port 80 on the local host.</td>
+<td> <strong>Right-click</strong> on your Local Cluster Manager, and click on <strong>Switch Cluster Mode</strong>. Select <strong>5 node</strong>, and click <strong>Yes</strong> if prompted to confirm that you want to switch your cluster (of course you are sure!). This will take a couple of minutes.</td>
+<td>This will shut down your current local cluster and start up an emulation of a 5 node cluster on your dev machine. This is done by 5x-ing all the processes required by SF to run on different nodes like FabricHost.exe and Fabric.exe. You will see SFX start to throw a bunch of failures at this point as well, since none of the APIs are returning values as the cluster is down. You can hover on the Local Cluster Manager icon in the tray to check the status at any point.</td>
 </tr>
 <tr class="even">
 <td>2</td>
-<td>Once the command return, open Edge and browse to <strong>http://localhost.</strong></td>
-<td>You should now see the application being served from the container.</td>
+<td>When the cluster is back up, head over to SFX to confirm that you have 5 nodes running.</td>
+<td>This info is available in the main dashboard or by expanding the Nodes tree on the left to show each running node in the cluster. You will also notice that your app is no longer running, since the entire cluster was removed.</td>
 </tr>
 <tr class="odd">
 <td>3</td>
-<td>Stop the container by running the command <strong>docker stop eshoptest</strong> in PowerShell</td>
-<td>This stops the container and persists the state and configuration. You can then restart the container at a later point.</td>
+<td>Head back to VS to make the following changes to the application's 5 node publish profile. Open the <strong>Local.5Node.xml</strong> file, in the <strong>ApplicationParameters</strong> folder, and make the following changes:
+<ol type="1">
+<li><p>Add the following to the <strong>&lt;Parameters&gt;</strong> element:</p></li>
+
+```csharp
+<Parameter Name="eShopLegacyWebForms_eShopTitle" Value="MSReady" />
+```
+
+<li><p>In the same section, increase the value of the <strong>eShopLegacyWebForms_InstanceCount</strong> parameter from 1 to <strong>3</strong></p></li>
+<li><p>Save the file</p></li>
+</td>
+<td>This adds back the environment variable override to this deployment configuration profile, since the previous modifications we did would only work for a 1 node cluster, and increases the number of instances to be deployed to 3.</td>
+</tr>
 </tr>
 <tr class="even">
 <td>4</td>
-<td>Remove the container by running the command <strong>docker rm eshoptest</strong> in PowerShell</td>
-<td>This command will remove the container state and configuration. We will do this as in the next step we create a new instance of the container with a different configuration.</td>
+<td>Open up the <strong>ServiceManifest.xml</strong>, under the project's PackageRoot folder, and remove the "Port="4000" that we added in earlier from the Endpoint configuration, so that Service Fabric can now dynamically assign ports to each instance. It should now look like: 
+
+```csharp
+Endpoint Protocol="http" Name="eShopLegacyWebFormsTypeEndpoint" Type="Input";
+```
+
+</td>
+<td>This is a requirement when deploying multiple instances of a service that listen on a port so as not to create a port clash with the 3 containers trying to sit on the same port address. By letting SF dynamically assign ports to each container, the 3 containers will all come up successfully and listen on different ports that you can check.</td>
 </tr>
 <tr class="odd">
 <td>5</td>
-<td><p>The application has a feature to add an environment variable to the front-page title.</p>
-<p>Create a new configuration of the container image, by running the following command in PowerShell:</p>
-<p><strong>docker run -p 80:80 -d --name eshoptest -e eShopTitle=MyTitle eshopweb:1.0</strong></p>
-<p><strong>Note:</strong></p>
-<p>This feature is implemented in the <strong>Site.Master.cs</strong> file.</p></td>
-<td>Environment variables is a common way of passing configurations to containers. The -e parameter is used with docker to pass environment variables to containers.</td>
+<td>Publish the application to the cluster as before, but this time, set the Target Profile to <strong>PublishProfiles\Local.5Node.xml</strong>.</td>
+<td>Your application will be built, and 3 containers will be deployed on your local cluster.</td>
 </tr>
 <tr class="even">
 <td>6</td>
-<td>Once the command returns, open Edge and browse to <strong>http://localhost.</strong></td>
-<td>You should now see the application title using your environment variable.</td>
+<td>Open up SFX and confirm that you have 3 instances of the container running by expanding out the app's tree as before, and checking what nodes the replicas are running on. Pick one of the nodes, and click on it to check the associated endpoint, and open up that endpoint in a new browser tab. It may look something like: http://LAB01:32001.</td>
+<td>The 3 containers have come up and are running on 3 different endpoints. Each should bring up the eShop UI successfully</td>
 </tr>
 <tr class="odd">
 <td>7</td>
-<td><p>You can run commands inside a running container’. Output the environment variables from the container by running the following commands in PowerShell:</p>
-<p><strong>docker exec eshoptest cmd.exe /C SET</strong></p></td>
-<td>You will see all the environment variables in the container being output.</td>
-</tr>
-<tr class="even">
-<td>8</td>
-<td><p>Let’s stop and remove the container:</p>
+<td>Your eShop is still getting more traffic and needs to handle more users! Let's scale up the number of instances some more by increasing the instance count of the service to "-1". Unlike with math, -1 in SF represents a "global service" in your cluster, or a service that needs to run on every node. 
 <ol type="1">
-<li><p><strong>docker stop eshoptest</strong></p></li>
-<li><p><strong>docker rm eshoptest</strong></p></li>
-</ol></td>
-<td></td>
+<li>Click into your service's page on SFX in the app tree - look for <strong>fabric:/eShopLegacyWebFormsApplication/..</strong> under "fabric:/eShopLegacyWebFormsApplication" </li>
+<li> Then, click on <strong>Actions</strong> (top right of the view) and select <strong>Scale Service</strong> </li>
+<li>Set the new desired instance count to <strong>-1</strong>, and click <strong>Scale Service</strong></li>
+</td>
+<td>You will see a service update get kicked off, following which more nodes will start to show up under the list of nodes on which your container is running, on the fully expanded App tree on the left nav. That's it! You just 5x scaled your service in minutes! In SF, it is also possible ot set up autoscaling rules as well as programmatic scaling to automate this behavior - something that most customers opt for in volatile load handling production workloads. Feel free to test out any of the new containers by grabbing any of the new endpoints and opening them up in your browser as before.</td>
 </tr>
 </tbody>
-</table>
+<table>
 
 ### Completion
 
-In this section of the lab, we created a container image with our
-application, and ran it. Finally, we used environment variables to
-configure the application running in the
-container.
+In this stage - you have succesfully (simulated) scaled your underlying infrastructure to 5 nodes, and then scaled the number of instances of your application deployed on your cluster both through the app config in VS as well as through SFX directly. 
 
-# Create an Azure Container Registry, and push your container to a registry
+# Next steps
 
-**Goal:** The goal of this section is to publish the container image to
-a private Azure Container Registry.
+From here, you have a few different things you should try to turn this into a production ready lift-and-shift.
 
-## Azure Subscription
-If you do not have one, you can get a trial subscription here: https://azure.microsoft.com/en-us/free/
+* Push your container image to a container registry (Azure Container Registry or Docker Hub) instead of using a local registry as in this lab - this will enable you to control versioning as well as remove the dependency of constantly deploying from an environment where you have the full application code available (as with VS here). This also opens you up to now using "Docker compose" to deploy your container to a Service Fabric cluster!
+* Add a new service to your application. Once you have moved your app to a container, you realize the need for a data analytics service on how your eShop is being used. In the same VS solution, you can add a Service Fabric service that will come with its own ServiceManifest.xml, which then has to imported into the same ApplicationManifest.xml we've been modifying - and you're all set.
+* Deploy this to a cluster running in the cloud. Head over to aka.ms/tryservicefabric to get set up with a Service Fabric Party Cluster! These are free, time-limited clusters for you to party on.
+* Experiment with Service Fabric Explorer - Standalone. This is SFX, fully open-sourced, running as a desktop application to you can connect to multiple clusters and customize the way that it runs. (If doing this lab on a LODS machine - SFX Standalone is pinned to your taskbar, the bigger SF logo present on your desktop.)
 
-## Process
-
-<table>
-<thead>
-<tr class="header">
-<th><strong>Step</strong></th>
-<th><strong>Procedure</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Create a container registry</td>
-<td><p>Create a private container registry using the Azure Container Registry service.</p>
-<p><strong>Note:</strong> This requires an Azure account</p></td>
-</tr>
-<tr class="even">
-<td>Build, tag and push the container image</td>
-<td>Create a production ready container image and push it to the registry.</td>
-</tr>
-<tr class="odd">
-<td>Pull the container image and run it locally</td>
-<td>Pull the production ready image from the container registry and run it.</td>
-</tr>
-</tbody>
-</table>
-
-## Create a container registry
-
-In this section we will create a private container registry in Azure
-using Azure Container Registry.
-
-<table>
-<thead>
-<tr class="header">
-<th><strong>Step</strong></th>
-<th><strong>Action</strong></th>
-<th><strong>Result</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>1</td>
-<td>Browse to <a href="https://shell.azure.com/" class="uri">https://shell.azure.com/</a> and sign-in to your Azure subscription.</td>
-<td>If you do not have one, you can get a trial subscription here: <a href="https://azure.microsoft.com/en-us/free/" class="uri">https://azure.microsoft.com/en-us/free/</a></td>
-</tr>
-<tr class="even">
-<td>2</td>
-<td><p>Create a new resource group:</p>
-<p><strong>az group create --name <em>[insert rg name]</em> --location eastus</strong></p>
-<p><strong>Note:</strong> Substitute the <em><strong>[insert rg name]</strong></em> with the name for your Resource Group</p></td>
-<td>az will output information about the resource group.</td>
-</tr>
-<tr class="odd">
-<td>3</td>
-<td><p>Create a container registry in that resource group:</p>
-<p><strong>az acr create --resource-group <em>[insert rg name]</em></strong> <strong>--name <em>[insert acr name]</em></strong> <strong>--sku Basic --admin-enabled</strong></p>
-<p><strong>Note:</strong> Substitute the <em><strong>[insert acr name]</strong></em> with the name for your registry name</p></td>
-<td>az will output the information about the newly created acr.</td>
-</tr>
-<tr class="even">
-<td>4</td>
-<td><p>Retrieve the credentials to sign-in to the container registry, and note these to be used later:</p>
-<p><strong>az acr credential show --name <em>[insert acr name]</em></strong></p>
-<p><strong>Note:</strong> Substitute the <em><strong>[insert acr name]</strong></em> with the name for your registry name</p></td>
-<td>az will output the passwords and login names for the registry, which we will use later in the lab.</td>
-</tr>
-</tbody>
-</table>
-
-### Completion
-
-In this section of the lab, we’ve created a private container registry
-as a repository to store your container images.
-
-##   
-
-## Build, tag and push the container
-
-In this section we will prepare our container image to be uploaded, by
-tagging it and upload the image to our registry.
-
-<table>
-<thead>
-<tr class="header">
-<th><strong>Step</strong></th>
-<th><strong>Action</strong></th>
-<th><strong>Result</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>1</td>
-<td><p>Open <strong>PowerShell</strong> and run the following command to tag the image:</p>
-<p><strong>docker tag eshopweb:1.0 <em>[insert acr name]</em>.azurecr.io/eshopweb:1.0</strong></p>
-<p><strong>Note:</strong></p>
-<p>The registry part of the container image tag should match the name of your container registry.</p></td>
-<td>This command creates a container image tag with the container registry name and version of the container image.</td>
-</tr>
-<tr class="even">
-<td>2</td>
-<td><p>Run the following command to login to your container registry:</p>
-<p><strong>docker login <em>[insert acr name]</em>.azurecr.io</strong></p>
-<p><strong>Note:</strong></p>
-<p>To retrieve the login server, username and password, see above section</p></td>
-<td></td>
-</tr>
-<tr class="odd">
-<td>3</td>
-<td><p>Push the container image to your registry:</p>
-<p><strong>docker push <em>[insert acr name]</em>.azurecr.io/eshopweb:1.0</strong></p></td>
-<td>This will start uploading the container image layers to you Azure Container Registry.</td>
-</tr>
-</tbody>
-</table>
-
-### Completion
-
-In this section of the lab, we’ve tagged our container image and
-uploaded it to our private container registry, ready to be deployed to
-any container host.
-
-##   
-
-## Pull the container image and run it locally
-
-In this section we’ll do a final validation of being able to pull down
-the container image.
-
-**Note:** If you don’t want to wait for the image to be pushed to the
-registry, skip step 1 and 2 in this section.
-
-<table>
-<thead>
-<tr class="header">
-<th><strong>Step</strong></th>
-<th><strong>Action</strong></th>
-<th><strong>Result</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>1</td>
-<td><p>Since we already have the image locally, let’s start by removing the local copy. Still in PowerShell, run this command:</p>
-<p><strong>docker rmi <em>[insert acr name]</em>.azurecr.io/eshopweb:1.0</strong></p></td>
-<td><p>The output of the command should read: <strong>Untagged: mycontainerregistry.azurecr.io\eshopweb:1.0</strong></p>
-<p>Since this is another tag on top of an existing image, the image is not being deleted, just the tag.</p></td>
-</tr>
-<tr class="even">
-<td>2</td>
-<td><p>To pull the container run this command:</p>
-<p><strong>docker pull <em>[insert acr name]</em>.azurecr.io/eshopweb:1.0</strong></p></td>
-<td>The pull will complete instantaneously, as the image files, which this tag refers to are already on disc.</td>
-</tr>
-<tr class="odd">
-<td>3</td>
-<td><p>Let’s run the container and validate it works:</p>
-<p><strong>docker run -p 80:80 --name eshopweb -e eShopTitle=MyTitle <em>[insert acr name]</em>.azurecr.io/eshopweb:1.0</strong></p></td>
-<td></td>
-</tr>
-<tr class="even">
-<td>4</td>
-<td>Once the command returns, open Edge and browse to <strong>http://localhost.</strong></td>
-<td>You should now see the application.</td>
-</tr>
-<tr class="odd">
-<td>5</td>
-<td><p>Finally, let’s clean-up, by running the following commands in PowerShell in the directory C:\Users\Administrator\Desktop\Lab:</p>
-<ol type="1">
-<li><p>by stopping the container: <strong>docker stop eshopweb</strong></p></li>
-<li><p>Remove the container: <strong>docker rm eshopweb</strong></p></li>
-<li><p>Reset the repository</p>
-<ol type="a">
-<li><p>git clean -df</p></li>
-<li><p>git reset --hard</p></li>
-</ol></li>
-</ol>
-<p><strong>Note:</strong> You need to do the clean-up to continue with the lab</p></td>
-<td>All cleaned-up and good to go</td>
-</tr>
-</tbody>
-</table>
-
-### Completion
-
-In this section of the lab, we’ve pulled down the container image form
-our private container registry, simulating a deployment, and validated
-the container can be run and the application works.
+Thanks for spending the time to learn more about lifting and shifting workloads to Service Fabric! Feel free to reach out to me with any feedback on this or if you'd like to contribute to expanding this further!
